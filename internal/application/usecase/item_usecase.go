@@ -413,21 +413,33 @@ func (u *itemUseCase) SearchItems(ctx context.Context, req *dto.SearchRequest) (
 	var items []*item.Item
 	var err error
 
-	if req.Query != "" {
-		items, err = u.itemRepository.Search(ctx, req.Query, req.PageSize, offset)
-	} else if req.Category != "" {
-		category, categoryErr := item.NewCategory(req.Category)
+	// Prepare optional filters
+	var category *item.Category
+	var status *item.Status
+
+	// Parse category if provided
+	if req.Category != "" {
+		cat, categoryErr := item.NewCategory(req.Category)
 		if categoryErr != nil {
 			return nil, fmt.Errorf("invalid category: %w", categoryErr)
 		}
-		items, err = u.itemRepository.FindByCategory(ctx, category, req.PageSize, offset)
-	} else if req.Status != "" {
-		status, statusErr := item.StatusFromString(req.Status)
+		category = &cat
+	}
+
+	// Parse status if provided
+	if req.Status != "" {
+		stat, statusErr := item.StatusFromString(req.Status)
 		if statusErr != nil {
 			return nil, fmt.Errorf("invalid status: %w", statusErr)
 		}
-		items, err = u.itemRepository.FindByStatus(ctx, status, req.PageSize, offset)
+		status = &stat
+	}
+
+	// Use SearchWithFilters to support combining multiple filters
+	if req.Query != "" || req.Category != "" || req.Status != "" {
+		items, err = u.itemRepository.SearchWithFilters(ctx, req.Query, category, status, req.PageSize, offset)
 	} else {
+		// If no filters provided, return available items
 		items, err = u.itemRepository.FindAvailableItems(ctx, req.PageSize, offset)
 	}
 

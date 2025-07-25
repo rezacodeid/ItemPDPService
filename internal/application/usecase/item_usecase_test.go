@@ -115,6 +115,14 @@ func (m *MockItemRepository) Search(ctx context.Context, query string, limit, of
 	return args.Get(0).([]*item.Item), args.Error(1)
 }
 
+func (m *MockItemRepository) SearchWithFilters(ctx context.Context, query string, category *item.Category, status *item.Status, limit, offset int) ([]*item.Item, error) {
+	args := m.Called(ctx, query, category, status, limit, offset)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*item.Item), args.Error(1)
+}
+
 func (m *MockItemRepository) FindAvailableItems(ctx context.Context, limit, offset int) ([]*item.Item, error) {
 	args := m.Called(ctx, limit, offset)
 	if args.Get(0) == nil {

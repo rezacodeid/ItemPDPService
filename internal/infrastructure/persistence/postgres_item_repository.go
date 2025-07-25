@@ -445,13 +445,64 @@ func (r *postgresItemRepository) Search(ctx context.Context, query string, limit
 		SELECT id, sku, name, description, price_amount, price_currency,
 			   category_name, category_slug, inventory_quantity, images,
 			   attributes, status, created_at, updated_at
-		FROM items 
+		FROM items
 		WHERE (name ILIKE '%%%s%%' OR description ILIKE '%%%s%%' OR sku ILIKE '%%%s%%')
 		ORDER BY created_at DESC LIMIT %d OFFSET %d`, query, query, query, limit, offset)
 
 	rows, err := r.db.QueryContext(ctx, searchQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search items: %w", err)
+	}
+	defer rows.Close()
+
+	return r.rowsToItems(rows)
+}
+
+// SearchWithFilters searches for items with optional filters
+func (r *postgresItemRepository) SearchWithFilters(ctx context.Context, query string, category *item.Category, status *item.Status, limit, offset int) ([]*item.Item, error) {
+	// Build dynamic query with optional filters
+	baseQuery := `
+		SELECT id, sku, name, description, price_amount, price_currency,
+			   category_name, category_slug, inventory_quantity, images,
+			   attributes, status, created_at, updated_at
+		FROM items`
+
+	var conditions []string
+	var args []interface{}
+	argIndex := 1
+
+	// Add text search condition if query is provided
+	if query != "" {
+		conditions = append(conditions, fmt.Sprintf("(name ILIKE $%d OR description ILIKE $%d OR sku ILIKE $%d)", argIndex, argIndex, argIndex))
+		args = append(args, "%"+query+"%")
+		argIndex++
+	}
+
+	// Add category filter if provided
+	if category != nil {
+		conditions = append(conditions, fmt.Sprintf("category_slug = $%d", argIndex))
+		args = append(args, category.Slug())
+		argIndex++
+	}
+
+	// Add status filter if provided
+	if status != nil {
+		conditions = append(conditions, fmt.Sprintf("status = $%d", argIndex))
+		args = append(args, status.String())
+		argIndex++
+	}
+
+	// Build final query
+	finalQuery := baseQuery
+	if len(conditions) > 0 {
+		finalQuery += " WHERE " + strings.Join(conditions, " AND ")
+	}
+	finalQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
+	args = append(args, limit, offset)
+
+	rows, err := r.db.QueryContext(ctx, finalQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search items with filters: %w", err)
 	}
 	defer rows.Close()
 
