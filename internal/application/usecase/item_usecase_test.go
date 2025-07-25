@@ -369,7 +369,7 @@ func TestItemUseCase_SearchItems(t *testing.T) {
 			PageSize: 10,
 		}
 
-		mockRepo.On("Search", mock.Anything, "test", 10, 0).Return([]*item.Item{testItem}, nil)
+		mockRepo.On("SearchWithFilters", mock.Anything, "test", (*item.Category)(nil), (*item.Status)(nil), 10, 0).Return([]*item.Item{testItem}, nil)
 
 		result, err := useCase.SearchItems(context.Background(), req)
 
@@ -394,7 +394,9 @@ func TestItemUseCase_SearchItems(t *testing.T) {
 			PageSize: 10,
 		}
 
-		mockRepo.On("FindByCategory", mock.Anything, mock.AnythingOfType("item.Category"), 10, 0).Return([]*item.Item{testItem}, nil)
+		// Create the expected category
+		expectedCategory, _ := item.NewCategory("electronics")
+		mockRepo.On("SearchWithFilters", mock.Anything, "", &expectedCategory, (*item.Status)(nil), 10, 0).Return([]*item.Item{testItem}, nil)
 
 		result, err := useCase.SearchItems(context.Background(), req)
 
@@ -417,7 +419,7 @@ func TestItemUseCase_SearchItems(t *testing.T) {
 			PageSize: 10,
 		}
 
-		mockRepo.On("Search", mock.Anything, "test", 10, 0).Return(nil, assert.AnError)
+		mockRepo.On("SearchWithFilters", mock.Anything, "test", (*item.Category)(nil), (*item.Status)(nil), 10, 0).Return(nil, assert.AnError)
 
 		result, err := useCase.SearchItems(context.Background(), req)
 

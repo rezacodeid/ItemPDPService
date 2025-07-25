@@ -357,7 +357,8 @@ func TestPostgresItemRepository_Search(t *testing.T) {
 			time.Now(),
 		)
 
-		mock.ExpectQuery("SELECT (.+) FROM items WHERE \\(name ILIKE '%test%' OR description ILIKE '%test%' OR sku ILIKE '%test%'\\) ORDER BY created_at DESC LIMIT 10 OFFSET 0").
+		mock.ExpectQuery("SELECT (.+) FROM items WHERE \\(name ILIKE \\$1 OR description ILIKE \\$1 OR sku ILIKE \\$1\\) ORDER BY created_at DESC LIMIT \\$2 OFFSET \\$3").
+			WithArgs("%test%", 10, 0).
 			WillReturnRows(rows)
 
 		results, err := repo.Search(ctx, query, limit, offset)
@@ -374,7 +375,8 @@ func TestPostgresItemRepository_Search(t *testing.T) {
 			"attributes", "status", "created_at", "updated_at",
 		})
 
-		mock.ExpectQuery("SELECT (.+) FROM items WHERE \\(name ILIKE '%test%' OR description ILIKE '%test%' OR sku ILIKE '%test%'\\) ORDER BY created_at DESC LIMIT 10 OFFSET 0").
+		mock.ExpectQuery("SELECT (.+) FROM items WHERE \\(name ILIKE \\$1 OR description ILIKE \\$1 OR sku ILIKE \\$1\\) ORDER BY created_at DESC LIMIT \\$2 OFFSET \\$3").
+			WithArgs("%test%", 10, 0).
 			WillReturnRows(rows)
 
 		results, err := repo.Search(ctx, query, limit, offset)
