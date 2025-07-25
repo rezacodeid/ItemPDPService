@@ -56,7 +56,7 @@ curl -X GET "http://localhost:8080/api/v1/items/sku/ITEM-001" \
 
 ### 4. Update Item
 ```bash
-curl -X PUT "http://localhost:8080/api/v1/items/ITEM-00-BARU" \
+curl -X PUT "http://localhost:8080/api/v1/items/71198e26-34db-46d5-9df2-5b7823a33faa" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Updated Product Name",

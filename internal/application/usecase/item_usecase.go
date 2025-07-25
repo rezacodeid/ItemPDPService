@@ -225,6 +225,25 @@ func (u *itemUseCase) UpdateItem(ctx context.Context, id string, req *dto.Update
 		return nil, fmt.Errorf("failed to find item: %w", err)
 	}
 
+	// Update name if provided
+	if req.Name != nil {
+		existingItem.SetName(*req.Name)
+	}
+
+	// Update description if provided
+	if req.Description != nil {
+		existingItem.SetDescription(*req.Description)
+	}
+
+	// Update category if provided
+	if req.Category != nil {
+		newCategory, err := item.NewCategory(*req.Category)
+		if err != nil {
+			return nil, fmt.Errorf("invalid category: %w", err)
+		}
+		existingItem.SetCategory(newCategory)
+	}
+
 	// Update price if provided
 	if req.Price != nil {
 		currency := existingItem.Price().Currency()
