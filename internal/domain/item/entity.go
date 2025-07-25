@@ -67,6 +67,15 @@ func (i *Item) SetCategory(category Category)    { i.category = category; i.upda
 func (i *Item) SetInventory(inventory Inventory) { i.inventory = inventory; i.updatedAt = time.Now() }
 func (i *Item) SetStatus(status Status)          { i.status = status; i.updatedAt = time.Now() }
 func (i *Item) SetImages(images []Image)         { i.images = images; i.updatedAt = time.Now() }
+func (i *Item) SetAttributes(attributes Attributes) {
+	i.attributes = attributes
+	i.updatedAt = time.Now()
+}
+
+// Infrastructure setters for reconstruction from database - should only be used by repository layer
+func (i *Item) SetID(id ItemID)                  { i.id = id }
+func (i *Item) SetCreatedAt(createdAt time.Time) { i.createdAt = createdAt }
+func (i *Item) SetUpdatedAt(updatedAt time.Time) { i.updatedAt = updatedAt }
 
 // Simple utility methods without business logic
 func (i *Item) AddImage(image Image) {

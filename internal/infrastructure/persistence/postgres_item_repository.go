@@ -639,16 +639,14 @@ func (r *postgresItemRepository) rowToItem(row *itemRow) (*item.Item, error) {
 		return nil, fmt.Errorf("failed to create item: %w", err)
 	}
 
-	// TODO: Set remaining fields using item methods
-	// This is a simplified implementation - normally you'd need proper methods
-	// to reconstruct the complete item state including ID, inventory, images, etc.
-
-	// Use the variables to avoid compilation errors
-	_ = id
-	_ = inventory
-	_ = status
-	_ = images
-	_ = attributes
+	// Set remaining fields using item methods to reconstruct complete state from database
+	createdItem.SetID(id)
+	createdItem.SetInventory(inventory)
+	createdItem.SetStatus(status)
+	createdItem.SetImages(images)
+	createdItem.SetAttributes(attributes)
+	createdItem.SetCreatedAt(row.CreatedAt)
+	createdItem.SetUpdatedAt(row.UpdatedAt)
 
 	return createdItem, nil
 }
