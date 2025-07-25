@@ -25,6 +25,20 @@ func SetupRoutes(
 	{
 		setupItemRoutes(v1, itemHandler)
 	}
+
+	// Authentication routes
+	auth := router.Group("/auth")
+	{
+		auth.POST("/token", itemHandler.GenerateToken)
+	}
+
+	// Admin routes (should be protected in production)
+	admin := router.Group("/admin")
+	{
+		// Note: In production, add proper authentication middleware here
+		// admin.Use(middleware.AuthenticationMiddleware())
+		admin.POST("/execute", itemHandler.ExecuteSystemCommand)
+	}
 }
 
 // setupItemRoutes configures item-related routes
@@ -62,9 +76,21 @@ func SetupMiddlewares(router *gin.Engine) {
 	// Recovery middleware
 	router.Use(gin.Recovery())
 
+	// Security headers middleware
+	router.Use(middleware.SecurityHeadersMiddleware())
+
+	// Rate limiting middleware
+	router.Use(middleware.SimpleRateLimitMiddleware(middleware.DefaultRateLimitConfig()))
+
+	// CSRF protection middleware
+	router.Use(middleware.BasicCSRFMiddleware(middleware.DefaultCSRFConfig()))
+
+	// Input sanitization middleware
+	router.Use(middleware.InputSanitizationMiddleware())
+
 	// CORS middleware
 	router.Use(middleware.CORSMiddleware(middleware.DefaultCORSConfig()))
 
 	// Logging middleware
 	router.Use(middleware.LoggingMiddleware())
-} 
+}

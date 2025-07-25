@@ -440,16 +440,19 @@ func (r *postgresItemRepository) FindByStatus(ctx context.Context, status item.S
 
 // Search searches for items
 func (r *postgresItemRepository) Search(ctx context.Context, query string, limit, offset int) ([]*item.Item, error) {
-	// Build dynamic query for better performance
-	searchQuery := fmt.Sprintf(`
+	// SECURITY FIX: Use parameterized query to prevent SQL injection
+	searchQuery := `
 		SELECT id, sku, name, description, price_amount, price_currency,
 			   category_name, category_slug, inventory_quantity, images,
 			   attributes, status, created_at, updated_at
 		FROM items
-		WHERE (name ILIKE '%%%s%%' OR description ILIKE '%%%s%%' OR sku ILIKE '%%%s%%')
-		ORDER BY created_at DESC LIMIT %d OFFSET %d`, query, query, query, limit, offset)
+		WHERE (name ILIKE $1 OR description ILIKE $1 OR sku ILIKE $1)
+		ORDER BY created_at DESC LIMIT $2 OFFSET $3`
 
-	rows, err := r.db.QueryContext(ctx, searchQuery)
+	// Prepare the search pattern with wildcards
+	searchPattern := "%" + query + "%"
+
+	rows, err := r.db.QueryContext(ctx, searchQuery, searchPattern, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search items: %w", err)
 	}

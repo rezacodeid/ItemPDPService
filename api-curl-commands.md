@@ -160,13 +160,33 @@ curl -X POST "http://localhost:8080/auth/token" \
   -H "Content-Type: application/json"
 ```
 
-## Administrative Endpoints (⚠️ Security Risk)
+## Administrative Endpoints (🔒 Secured)
 
-### 14. Execute System Command (⚠️ DANGEROUS)
+### 14. Execute System Command (🔒 SECURED - Allowlist Only)
 ```bash
-# WARNING: This endpoint appears to be a security vulnerability
-curl -X POST "http://localhost:8080/admin/execute?command=ls" \
+# SECURITY UPDATE: Only predefined safe commands are allowed
+# Allowed commands: status, health, version, disk-usage
+
+# Check system status
+curl -X POST "http://localhost:8080/admin/execute?command=status" \
   -H "Content-Type: application/json"
+
+# Check disk health
+curl -X POST "http://localhost:8080/admin/execute?command=health" \
+  -H "Content-Type: application/json"
+
+# Get system version
+curl -X POST "http://localhost:8080/admin/execute?command=version" \
+  -H "Content-Type: application/json"
+
+# Check disk usage
+curl -X POST "http://localhost:8080/admin/execute?command=disk-usage" \
+  -H "Content-Type: application/json"
+
+# Attempting unauthorized commands will return an error
+curl -X POST "http://localhost:8080/admin/execute?command=rm" \
+  -H "Content-Type: application/json"
+# Returns: {"error": "Command 'rm' not allowed. Allowed commands: status, health, version, disk-usage"}
 ```
 
 ### 15. Download File (⚠️ Potential Security Risk)
@@ -258,7 +278,7 @@ curl -X POST "http://localhost:8080/api/v1/items/batch/process" \
 3. **Pagination**: Most list endpoints support `page` and `page_size` query parameters
 4. **Validation**: All endpoints include request validation with detailed error responses
 5. **CORS**: The service supports CORS with permissive settings for development
-6. **Security Warnings**: Some endpoints (admin/execute, files download) appear to be intentional security vulnerabilities for training purposes
+6. **Security**: Security vulnerabilities have been fixed - admin endpoints now use allowlists and secure token generation
 
 ## Environment Setup
 

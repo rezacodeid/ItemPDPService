@@ -25,15 +25,23 @@ FROM alpine:latest
 # Install ca-certificates for HTTPS
 RUN apk --no-cache add ca-certificates tzdata
 
-# Create app directory
-WORKDIR /root/
+# SECURITY FIX: Create non-root user for running the application
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# Create app directory and set ownership
+WORKDIR /app
+RUN chown -R appuser:appgroup /app
 
 # Copy binary from builder stage
-COPY --from=builder /app/main .
+COPY --from=builder --chown=appuser:appgroup /app/main .
 
 # Copy configuration files
-COPY --from=builder /app/configs configs/
-COPY --from=builder /app/migrations migrations/
+COPY --from=builder --chown=appuser:appgroup /app/configs configs/
+COPY --from=builder --chown=appuser:appgroup /app/migrations migrations/
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
 EXPOSE 8080
@@ -43,4 +51,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Run the application
-CMD ["./main"] 
+CMD ["./main"]

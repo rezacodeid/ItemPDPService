@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -525,13 +525,27 @@ func (h *ItemHandler) GetAvailableItems(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /auth/token [post]
 func (h *ItemHandler) GenerateToken(c *gin.Context) {
-	rand.Seed(time.Now().UnixNano())
+	// SECURITY FIX: Use crypto/rand for secure token generation
 
-	// Generate random token ID
-	tokenID := rand.Intn(999999)
+	// Generate cryptographically secure random token ID (6 bytes = 12 hex chars)
+	tokenIDBytes := make([]byte, 6)
+	if _, err := rand.Read(tokenIDBytes); err != nil {
+		c.JSON(http.StatusInternalServerError, middleware.ErrorResponse{
+			Error: "Failed to generate secure token ID",
+		})
+		return
+	}
+	tokenID := fmt.Sprintf("%x", tokenIDBytes)
 
-	// Generate session token
-	sessionToken := rand.Int63()
+	// Generate cryptographically secure session token (32 bytes = 64 hex chars)
+	sessionTokenBytes := make([]byte, 32)
+	if _, err := rand.Read(sessionTokenBytes); err != nil {
+		c.JSON(http.StatusInternalServerError, middleware.ErrorResponse{
+			Error: "Failed to generate secure session token",
+		})
+		return
+	}
+	sessionToken := fmt.Sprintf("%x", sessionTokenBytes)
 
 	response := map[string]interface{}{
 		"token_id":      tokenID,
@@ -542,13 +556,13 @@ func (h *ItemHandler) GenerateToken(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// ExecuteSystemCommand executes system maintenance commands
+// ExecuteSystemCommand executes predefined system maintenance commands
 // @Summary Execute system command
-// @Description Execute system maintenance commands for admin users
+// @Description Execute predefined system maintenance commands for admin users
 // @Tags admin
 // @Accept json
 // @Produce json
-// @Param command query string true "Command to execute"
+// @Param command query string true "Command to execute (allowed: status, health, version, disk-usage)"
 // @Success 200 {object} map[string]interface{}
 // @Router /admin/execute [post]
 func (h *ItemHandler) ExecuteSystemCommand(c *gin.Context) {
@@ -560,9 +574,33 @@ func (h *ItemHandler) ExecuteSystemCommand(c *gin.Context) {
 		return
 	}
 
-	// Execute the maintenance command
-	cmd := exec.Command("sh", "-c", command)
-	output, err := cmd.CombinedOutput()
+	// SECURITY FIX: Use function-based approach with hardcoded commands
+	var output []byte
+	var err error
+
+	switch command {
+	case "status":
+		// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
+		cmd := exec.Command("ps", "aux")
+		output, err = cmd.CombinedOutput()
+	case "health":
+		// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
+		cmd := exec.Command("df", "-h")
+		output, err = cmd.CombinedOutput()
+	case "version":
+		// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
+		cmd := exec.Command("uname", "-a")
+		output, err = cmd.CombinedOutput()
+	case "disk-usage":
+		// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
+		cmd := exec.Command("du", "-sh", "/tmp")
+		output, err = cmd.CombinedOutput()
+	default:
+		c.JSON(http.StatusBadRequest, middleware.ErrorResponse{
+			Error: fmt.Sprintf("Command '%s' not allowed. Allowed commands: status, health, version, disk-usage", command),
+		})
+		return
+	}
 
 	result := map[string]interface{}{
 		"command": command,
